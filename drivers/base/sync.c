@@ -613,6 +613,7 @@ int sync_fence_cancel_async(struct sync_fence *fence,
 	spin_unlock_irqrestore(&fence->waiter_list_lock, flags);
 	return ret;
 }
+EXPORT_SYMBOL(sync_fence_cancel_async);
 
 int sync_fence_wait(struct sync_fence *fence, long timeout)
 {
