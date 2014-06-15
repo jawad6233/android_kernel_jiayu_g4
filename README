@@ -1,12 +1,3 @@
-This is a kernel source for MT6589
+This is a kernel source for MT6589 Jiayu G4
 
-Actually the list of supported devices :
-	Faea F2S
-
-If you want to add a device, please send a device kernel source (pure mediatek source) at xda (@Dr-Shadow) on private message
-
-There is a commit history built but this is not the final release yet.
-
-The final release will strip mtk build scripts and show the real commit history of mtk kernel (if I can reach final release of course ^-^)
-
-You need arm-eabi-4.7 toolchain (you have to setup CROSS-COMPILE var like in build.sh)
+You need arm-eabi-4.8 toolchain (you have to setup CROSS-COMPILE var like in build.sh)
