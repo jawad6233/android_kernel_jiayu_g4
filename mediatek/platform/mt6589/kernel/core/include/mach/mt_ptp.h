@@ -23,7 +23,7 @@ u32 PTP_AGEVOFFSET = 0;
 #define PTP_Get_Real_Val 1
 #define Set_PMIC_Volt 1
 #define En_ISR_log 0
-
+#define ENHANCE_TURBO_OPP 1
 #define ptp_fsm_int_b_IRQ_ID 32
 
 #define ptp_read(addr)		(*(volatile u32 *)(addr))

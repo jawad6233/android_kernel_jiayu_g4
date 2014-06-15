@@ -2588,3 +2588,7 @@ CONFIG_DEFAULT_SECURITY_SELINUX=y
 # Default status to not set
 #
 # CONFIG_GSL_ALG_ID is not set
+
+# CONFIG_DYNAMIC_PAGE_WRITEBACK is not set
+# CONFIG_DYNAMIC_FSYNC is not set
+# CONFIG_ASYNC_FSYNC is not set

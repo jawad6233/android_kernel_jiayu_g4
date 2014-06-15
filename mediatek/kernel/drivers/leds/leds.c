@@ -152,6 +152,8 @@ int setMaxbrightness(int max_level, int enable);
  ***************************************************************************/
 static struct mt65xx_led_data *g_leds_data[MT65XX_LED_TYPE_TOTAL];
 struct wake_lock leds_suspend_lock;
+static unsigned long flags;
+static DEFINE_SPINLOCK(g_backlight_SpinLock);
 
 /****************************************************************************
  * add API for temperature control
@@ -1282,6 +1284,12 @@ static int mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
 
 		
 		case MT65XX_LED_MODE_CUST_BLS_PWM:
+
+#if (defined(OTM1283_CPT53_ZET) || defined(LG4591_LG5_XINLI) || defined(OTM1281A_AUO_TRULY) || defined(RM68190_AUO50_YKL))
+			if((bl_brightness ==0)&&(level != 0))
+				msleep(200);
+#endif
+
 					if(strcmp(cust->name,"lcd-backlight") == 0)
 					{
 						bl_brightness = level;
@@ -1303,7 +1311,14 @@ static int mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
 			#endif
 					//printk("brightness_set_cust:backlight control by BLS_PWM!!\n");
 			//#if !defined (MTK_AAL_SUPPORT)
-			return ((cust_set_brightness)(cust->data))(level);
+                                        spin_lock_irqsave(&g_backlight_SpinLock, flags);
+                                        //mutex_lock(&g_backlight_SpinLock);
+                                        //spin_lock(&g_backlight_SpinLock);
+                                        ((cust_set_brightness)(cust->data))(level);
+                                        //spin_unlock(&g_backlight_SpinLock);
+                                        //mutex_unlock(&g_backlight_SpinLock);
+                                        spin_unlock_irqrestore(&g_backlight_SpinLock, flags);
+                                        return 0;
 			printk("brightness_set_cust:backlight control by BLS_PWM done!!\n");
 			//#endif
             

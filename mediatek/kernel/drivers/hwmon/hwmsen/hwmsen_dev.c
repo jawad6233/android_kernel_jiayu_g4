@@ -63,7 +63,10 @@ struct hwmsen_context { /*sensor context*/
 	
 	struct hwmsen_object    obj;
 };
-
+#if defined(MTK_AUTO_DETECT_ALSPS)
+static char psensor_name[25];
+static struct sensor_init_info* psensor_init_list[MAX_CHOOSE_G_NUM]= {0}; //modified
+#endif
 #if defined(MTK_AUTO_DETECT_ACCELEROMETER)
 static char gsensor_name[25];
 static struct sensor_init_info* gsensor_init_list[MAX_CHOOSE_G_NUM]= {0}; //modified
@@ -1437,6 +1440,104 @@ static struct platform_driver gsensor_driver = {
 EXPORT_SYMBOL_GPL(hwmsen_gsensor_add);
 
 #endif
+#if defined(MTK_AUTO_DETECT_ALSPS)//
+
+int hwmsen_psensor_remove(struct platform_device *pdev)
+{
+    //int err =0;
+	int i=0;
+	for(i = 0; i < MAX_CHOOSE_G_NUM; i++)
+	{
+	   if(0 ==  strcmp(psensor_name,psensor_init_list[i]->name))
+	   {
+	      if(NULL == psensor_init_list[i]->uninit)
+	      {
+	        HWM_LOG(" hwmsen_psensor_remove null pointer +\n");
+	        return -1;
+	      }
+	      psensor_init_list[i]->uninit();
+	   }
+	}
+    return 0;
+}
+
+static int psensor_probe(struct platform_device *pdev) 
+{
+    int i =0;
+	int err=0;
+	HWM_LOG(" psensor_probe +\n");
+
+	//
+/*
+     for(i = 0; i < MAX_CHOOSE_G_NUM; i++)
+     {
+       HWM_LOG(" gsensor_init_list[i]=%d\n",gsensor_init_list[i]);
+     }
+*/
+	//
+	for(i = 0; i < MAX_CHOOSE_G_NUM; i++)
+	{
+	  HWM_LOG(" i=%d\n",i);
+	  if(0 != psensor_init_list[i])
+	  {
+	    HWM_LOG(" !!!!!!!!\n");
+	    err = psensor_init_list[i]->init();
+		if(0 == err)
+		{
+		   strcpy(psensor_name,psensor_init_list[i]->name);
+		   HWM_LOG(" psensor %s probe ok\n", psensor_name);
+		   break;
+		}
+	  }
+	}
+
+	if(i == MAX_CHOOSE_G_NUM)
+	{
+	   HWM_LOG(" psensor probe fail\n");
+	}
+	return 0;
+}
+
+
+static struct platform_driver psensor_driver = {
+	.probe      = psensor_probe,
+	.remove     = hwmsen_psensor_remove,    
+	.driver     = 
+	{
+		.name  = "als_ps",
+//		.owner = THIS_MODULE,
+	}
+};
+
+ int hwmsen_psensor_add(struct sensor_init_info* obj) 
+{
+    int err=0;
+	int i =0;
+	
+	HWM_FUN(f);
+
+	for(i =0; i < MAX_CHOOSE_G_NUM; i++ )
+	{
+	    if(NULL == psensor_init_list[i])
+	    {
+	      psensor_init_list[i] = kzalloc(sizeof(struct sensor_init_info), GFP_KERNEL);
+		  if(NULL == psensor_init_list[i])
+		  {
+		     HWM_ERR("kzalloc error");
+		     return -1;
+		  }
+		  obj->platform_diver_addr = &psensor_driver;
+	      psensor_init_list[i] = obj;
+		  
+		  break;
+	    }
+	}
+		
+	return err;
+}
+EXPORT_SYMBOL_GPL(hwmsen_psensor_add);
+
+#endif
 
 /*----------------------------------------------------------------------------*/
 static int __init hwmsen_init(void) 
@@ -1448,7 +1549,14 @@ static int __init hwmsen_init(void)
 		return -ENODEV;
 	}    
 
-	
+#if defined(MTK_AUTO_DETECT_ALSPS)
+	if(platform_driver_register(&psensor_driver))
+	{
+		HWM_ERR("failed to register pensor driver");
+		return -ENODEV;
+	}
+#endif
+
 #if defined(MTK_AUTO_DETECT_ACCELEROMETER)
     if(platform_driver_register(&gsensor_driver))
 	{

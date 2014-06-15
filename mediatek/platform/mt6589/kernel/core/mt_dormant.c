@@ -1480,7 +1480,7 @@ static void platform_restore_context(void)
     trace_stop_dormant();
     trace_start_dormant();
 #endif
-    
+
     dormant_ret_flag[cpu_id] = 1;
 
     power_state[cpu_id] = STATUS_RUN;

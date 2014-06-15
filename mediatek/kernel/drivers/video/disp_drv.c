@@ -946,7 +946,7 @@ DISP_STATUS DISP_PowerEnable(BOOL enable)
         DAL_OnDispPowerOn();
     }
     else if (lcm_drv && lcm_drv->suspend_power)
-    {
+   {
         lcm_drv->suspend_power();
     }
 

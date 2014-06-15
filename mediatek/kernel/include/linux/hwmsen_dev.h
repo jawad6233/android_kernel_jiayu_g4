@@ -64,7 +64,10 @@ extern int hwmsen_attach(int sensor, struct hwmsen_object *obj);
 extern int hwmsen_detach(int sensor);
 extern int hwmsen_get_interrupt_data(int sensor, hwm_sensor_data *data);
 
-#if defined(MTK_AUTO_DETECT_ACCELEROMETER)//
+#if defined(MTK_AUTO_DETECT_ALSPS)
+extern int hwmsen_psensor_add(struct sensor_init_info* obj) ;
+#endif
+#if defined(MTK_AUTO_DETECT_ACCELEROMETER)
 extern int hwmsen_gsensor_add(struct sensor_init_info* obj) ;
 #endif
 
