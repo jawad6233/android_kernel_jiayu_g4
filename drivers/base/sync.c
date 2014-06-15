@@ -586,7 +586,6 @@ static bool sync_fence_check(struct sync_fence *fence)
 	return fence->status != 0;
 }
 
-EXPORT_SYMBOL(sync_fence_cancel_async);
 int sync_fence_wait(struct sync_fence *fence, long timeout)
 {
 	int err = 0;
