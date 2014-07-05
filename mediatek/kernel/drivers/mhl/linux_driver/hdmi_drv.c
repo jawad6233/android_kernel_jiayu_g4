@@ -734,6 +734,11 @@ int hdmi_drv_power_on(void)
 #if 1
 	SiiMhlTxHwGpioResume();
 	//pmic_config_interface(0x87,0x1,0x01,0x0);
+/* Vanzo:lubaoquan on: Tue, 21 May 2013 22:35:29 +0800
+ * TODO: replace this line with your comment
+ */
+	hwPowerOn(MT65XX_POWER_LDO_VGP5, VOL_1200, "HDMI");
+// End of Vanzo: lubaoquan
 #endif
 
 	//msleep(100);
@@ -763,6 +768,11 @@ void hdmi_drv_power_off(void)
 	//SwitchToD3();
 	//SiiMhlTxHwResetKeepLow();
 	//pmic_config_interface(0x87,0x0,0x01,0x0);
+/* Vanzo:lubaoquan on: Tue, 21 May 2013 22:38:24 +0800
+ * TODO: replace this line with your comment
+ */
+    hwPowerDown(MT65XX_POWER_LDO_VGP5, "HDMI");
+ // End of Vanzo: lubaoquan
 }
 
 extern unsigned char SiiTxReadConnectionStatus(void);

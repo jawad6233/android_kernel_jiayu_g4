@@ -289,6 +289,10 @@ __acquires(musb->lock)
 	//			regs = ep->regs;
 				is_in = ctrlrequest->wIndex & USB_DIR_IN;
 
+                //Modification for ALPS00451478
+				DBG(0, "MUSB_ACTION : USB_REQ_CLEAR_FEATURE - USB_RECIP_ENDPOINT: is_in=%d, epnum=%d \n", is_in, epnum);
+                //Modification for ALPS00451478
+
 				if (is_in)
 				{
 					ep = ep_in_list[epnum];
@@ -335,6 +339,12 @@ __acquires(musb->lock)
 					       MUSB_RXCSR_P_WZC_BITS;
 					csr &= ~(MUSB_RXCSR_P_SENDSTALL |
 						 MUSB_RXCSR_P_SENTSTALL);
+                    //Modification for ALPS00451478
+                    /*csr &= ~(MUSB_RXCSR_P_SENDSTALL |
+                         MUSB_RXCSR_P_SENTSTALL | MUSB_RXCSR_RXPKTRDY);*/
+
+                    DBG(0, "after clear stall bits: csr = 0x%x!!\n", csr);
+                    //Modification for ALPS00451478
 					dumpTime(funcWritew, epnum);
 					musb_writew(regs, MUSB_RXCSR, csr);
 
@@ -342,11 +352,21 @@ __acquires(musb->lock)
 				/* Maybe start the first request in the queue */
 				request = next_request(musb_ep);
 				if (!musb_ep->busy && request) {
-					DBG(1, "restarting the request\n");
+                    //Modification for ALPS00451478
+					DBG(0, "restarting the request\n");
+                    //Modification for ALPS00451478
 					musb_ep_restart(musb, request);
 
 				}
-
+                //Modification for ALPS00451478
+                else if(!is_in)
+                {
+                    csr  = musb_readw(regs, MUSB_RXCSR);
+					DBG(0, "no more request, clear the RXPKTRDY to avoid error RX FIFO/DMA read!! csr = 0x%x\n", csr);
+                    csr &= ~(MUSB_RXCSR_RXPKTRDY);
+                    musb_writew(regs, MUSB_RXCSR, csr);
+                }
+                //Modification for ALPS00451478
 				/* select ep0 again */
 				musb_ep_select(mbase, 0);
 				} break;

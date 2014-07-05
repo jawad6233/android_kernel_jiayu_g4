@@ -473,7 +473,13 @@ halReturn_t HalOpenI2cDevice(char const *DeviceName, char const *DriverName)
     	return HAL_RET_PARAMETER_ERROR;
     }
 
+/* Vanzo:lubaoquan on: Tue, 21 May 2013 22:40:41 +0800
+ * TODO: replace this line with your comment
     i2c_register_board_info(4, &i2c_mhl, 1);
+ */
+
+    i2c_register_board_info(2, &i2c_mhl, 1);
+ // End of Vanzo: lubaoquan
 
     memcpy(gMhlI2cIdTable[0].name, DeviceName, retVal);
     gMhlI2cIdTable[0].name[retVal] = 0;
@@ -559,7 +565,13 @@ uint8_t I2C_ReadByte(uint8_t deviceID, uint8_t offset)
     gMhlDevice.pI2cClient->addr = accessI2cAddr;
 
 #if 1
+/* Vanzo:lubaoquan on: Tue, 21 May 2013 22:41:53 +0800
+ * TODO: replace this line with your comment
     gMhlDevice.pI2cClient->ext_flag |= I2C_DIRECTION_FLAG;
+ */
+
+// End of Vanzo: lubaoquan
+
     status = i2c_master_send(gMhlDevice.pI2cClient, &offset, 1);
     if (status < 0)
     {
@@ -568,7 +580,12 @@ uint8_t I2C_ReadByte(uint8_t deviceID, uint8_t offset)
     }
     msleep(10);
 
+/* Vanzo:lubaoquan on: Tue, 21 May 2013 22:42:17 +0800
+ * TODO: replace this line with your comment
     gMhlDevice.pI2cClient->ext_flag |= I2C_DIRECTION_FLAG;
+ */
+
+// End of Vanzo: lubaoquan
     status = i2c_master_recv(gMhlDevice.pI2cClient, (char*)&buf, 1);
     data.byte = buf;
 
@@ -633,7 +650,12 @@ void I2C_WriteByte(uint8_t deviceID, uint8_t offset, uint8_t value)
             0, I2C_SMBUS_WRITE, offset, I2C_SMBUS_BYTE_DATA,
             &data);
 #else
+/* Vanzo:lubaoquan on: Tue, 21 May 2013 22:42:33 +0800
+ * TODO: replace this line with your comment
     gMhlDevice.pI2cClient->ext_flag |= I2C_DIRECTION_FLAG;
+ */
+
+// End of Vanzo: lubaoquan
     buf[0] = offset;
     buf[1] = value;
     status = i2c_master_send( gMhlDevice.pI2cClient, (const char*)buf, 2 /*sizeof(buf)*/);
@@ -685,7 +707,12 @@ uint8_t I2C_ReadBlock(uint8_t deviceID, uint8_t offset,uint8_t *buf, uint8_t len
 #else
         u8 tmp;
         tmp = offset + i;
+/* Vanzo:lubaoquan on: Tue, 21 May 2013 22:42:40 +0800
+ * TODO: replace this line with your comment
         gMhlDevice.pI2cClient->ext_flag |= I2C_DIRECTION_FLAG;
+ */
+
+// End of Vanzo: lubaoquan
         status = i2c_master_send(gMhlDevice.pI2cClient, (const char*)&tmp, 1);
         if (status < 0)
         {
@@ -738,7 +765,12 @@ void I2C_WriteBlock(uint8_t deviceID, uint8_t offset, uint8_t *buf, uint8_t len)
 #else
         tmp[0] = offset + i;
         tmp[1] = *buf;
+/* Vanzo:lubaoquan on: Tue, 21 May 2013 22:42:47 +0800
+ * TODO: replace this line with your comment
         gMhlDevice.pI2cClient->ext_flag |= I2C_DIRECTION_FLAG;
+ */
+
+// End of Vanzo: lubaoquan
         status = i2c_master_send( gMhlDevice.pI2cClient, (const char*)tmp, 2);
 
 #endif

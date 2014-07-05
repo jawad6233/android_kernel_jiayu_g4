@@ -71,7 +71,7 @@
 
 #include <cust_gpio_usage.h>
 
-int Enable_BATDRV_LOG = 1; //2; //hongzhe-dbg orig is 2
+int Enable_BATDRV_LOG = 2;
 
 int g_low_power_ready = 0;
 
@@ -85,7 +85,7 @@ int g_enable_high_vbat_spec = 0;
 #endif
 
 extern int g_pmic_cid;
-
+extern kal_uint8 fan5405_dump5_register(unsigned char index);
 ///////////////////////////////////////////////////////////////////////////////////////////
 //// Thermal related flags
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -1469,13 +1469,8 @@ INT16 BattVoltToTemp(UINT32 dwVolt)
     xlog_printk(ANDROID_LOG_DEBUG, "Power/Battery", "BattVoltToTemp() : TRes = %d\n", TRes);
     xlog_printk(ANDROID_LOG_DEBUG, "Power/Battery", "BattVoltToTemp() : sBaTTMP = %d\n", sBaTTMP);
     #endif   
-
-//hongzhe-dbg
-#if 0
-	return 20;
-#else
+    
     return sBaTTMP;
-#endif
 }
 
 //void BAT_SetUSBState(int usb_state_value)
@@ -1559,7 +1554,16 @@ void select_charging_curret_bcct(void)
         else                          fan5405_config_interface_liao(0x04,0x19);
         //---------------------------------------------------
         
+/* Vanzo:lubaoquan on: Wed, 15 May 2013 18:01:11 +0800
+ * TODO: replace this line with your comment
+        fan5405_config_interface_liao(0x05,0x02);
+ */
+#if (defined(DCT_V7) || defined(DCT_V8) || defined(DCT_V9) || defined(DCT_E7))
         fan5405_config_interface_liao(0x05,0x04);
+#else
+        fan5405_config_interface_liao(0x05,0x02);
+#endif
+// End of Vanzo: lubaoquan
     }
     else
     {
@@ -1636,8 +1640,11 @@ void ChargerHwInit_fan5405(void)
         printk("[MT6329 BAT_probe] ChargerHwInit\n" );
     }
 
+
+	
     if(temp_init_flag==0)
     {
+        printk("=================>enter in ChargerHwInit_fan5405\n");
         if(g_enable_high_vbat_spec == 1)
         {
             if(g_pmic_cid == 0x1020)
@@ -1661,7 +1668,16 @@ void ChargerHwInit_fan5405(void)
         else
             fan5405_config_interface_liao(0x02,0x8e);
         
+/* Vanzo:lubaoquan on: Wed, 15 May 2013 18:04:46 +0800
+ * TODO: replace this line with your comment
+        fan5405_config_interface_liao(0x05,0x02);
+ */
+#if (defined(DCT_V7) || defined(DCT_V8) || defined(DCT_V9) || defined(DCT_E7))
         fan5405_config_interface_liao(0x05,0x04);
+#else
+        fan5405_config_interface_liao(0x05,0x02);
+#endif
+// End of Vanzo: lubaoquan
         
         if(g_low_power_ready == 1)
             fan5405_config_interface_liao(0x04,0x19);
@@ -1672,7 +1688,56 @@ void ChargerHwInit_fan5405(void)
     }
     else
     {
-        fan5405_config_interface_liao(0x00,0x80);
+	 unsigned int val;
+	 
+ 	 val = fan5405_dump5_register(0);
+	 if((val&0x07) == 0x06)
+ 	{
+ 		printk("+++++++++++error2++++++++++++++ >reg[0]=0x%x\n", val);
+	        if(g_enable_high_vbat_spec == 1)
+	        {
+	            if(g_pmic_cid == 0x1020)
+	                fan5405_config_interface_liao(0x06,0x70);    
+	            else
+	                fan5405_config_interface_liao(0x06,0x77);
+	        }
+	        else
+	            fan5405_config_interface_liao(0x06,0x70);
+	        
+	        fan5405_config_interface_liao(0x00,0x80);
+	        fan5405_config_interface_liao(0x01,0xb9);
+
+	        if(g_enable_high_vbat_spec == 1)
+	        {
+	            if(g_pmic_cid == 0x1020)
+	                fan5405_config_interface_liao(0x02,0x8e);
+	            else    
+	                fan5405_config_interface_liao(0x02,0xaa);
+	        }
+	        else
+	            fan5405_config_interface_liao(0x02,0x8e);
+	        
+	/* Vanzo:lubaoquan on: Wed, 15 May 2013 18:04:46 +0800
+	 * TODO: replace this line with your comment
+	        fan5405_config_interface_liao(0x05,0x02);
+	 */
+#if (defined(DCT_V7) || defined(DCT_V8) || defined(DCT_V9) || defined(DCT_E7))
+	        fan5405_config_interface_liao(0x05,0x04);
+#else
+	        fan5405_config_interface_liao(0x05,0x02);
+#endif
+	// End of Vanzo: lubaoquan
+	        
+	        if(g_low_power_ready == 1)
+	            fan5405_config_interface_liao(0x04,0x19);
+	        else
+	            fan5405_config_interface_liao(0x04,0x1B); //194mA
+	        
+	        temp_init_flag =1;     	
+	}
+	 else
+	        fan5405_config_interface_liao(0x00,0x80);
+		
     }
 }
 
@@ -1684,7 +1749,7 @@ void fan5405_set_ac_current(void)
         printk("[BATTERY:fan5405] fan5405_set_ac_charging_current \r\n");    
     }    
     
-    #if 0 /* hongzhe-dbg */
+    #if 0
     //set the current to 1.25A,
     //1). 0x06h->0x70h  // set safety register first,
     //2). 0x01h->0xF8h
@@ -1716,9 +1781,9 @@ void fan5405_set_ac_current(void)
     
     fan5405_config_interface_liao(0x04,0x79);
     fan5405_config_interface_liao(0x05,0x04);
+    #endif
 
-#else // hongzhe-dbg close
-
+    #if 1
     //set the current to 650mA,
     //1). 0x06h->0x10h  // set safety register first,
     //2). 0x01h->0xF8h
@@ -1816,7 +1881,16 @@ void fan5405_set_ac_current(void)
         reg_set_value += 0x0B;
     fan5405_config_interface_liao(0x04,reg_set_value);
     
+/* Vanzo:lubaoquan on: Wed, 15 May 2013 18:05:50 +0800
+ * TODO: replace this line with your comment
+    fan5405_config_interface_liao(0x05,0x02);
+ */
+#if (defined(DCT_V7) || defined(DCT_V8) || defined(DCT_V9) || defined(DCT_E7))
     fan5405_config_interface_liao(0x05,0x04);
+#else
+        fan5405_config_interface_liao(0x05,0x02);
+#endif
+// End of Vanzo: lubaoquan
 #endif    
     
     #endif
@@ -1935,6 +2009,8 @@ void select_charging_curret_fan5405(void)
         } 
         else if (BMT_status.charger_type == NONSTANDARD_CHARGER) 
         {   
+/* Vanzo:zhangqingzhan on: Mon, 18 Feb 2013 19:24:01 +0800
+ * TODO:nonstandard charge
 #if defined(MTK_JEITA_STANDARD_SUPPORT)
             if(g_temp_status == TEMP_NEG_10_TO_POS_0)
             {
@@ -1977,6 +2053,13 @@ void select_charging_curret_fan5405(void)
             if (Enable_BATDRV_LOG == 1) {
                 printk("[BATTERY:fan5405] BMT_status.charger_type == NONSTANDARD_CHARGER \r\n");    
             }
+ */
+#if (defined(DCT_V7) || defined(DCT_V8) || defined(DCT_V9) || defined(DCT_E7))
+            fan5405_config_interface_liao(0x01,0x78);
+#else
+            fan5405_set_ac_current();
+#endif
+// End of Vanzo: zhangqingzhan
         } 
         else if (BMT_status.charger_type == STANDARD_CHARGER) 
         {
@@ -2014,6 +2097,8 @@ void pchr_turn_on_charging_fan5405(void)
     }
     else
     {
+
+        printk("[czb pchr_turn_on_charging_fan5405]===========\n");
         ChargerHwInit_fan5405();
     
         if (Enable_BATDRV_LOG == 1) {
@@ -2211,7 +2296,7 @@ int g_Get_I_Charging(void)
     
     if(ADC_I_SENSE > ADC_BAT_SENSE)
     {
-        ICharging = (ADC_I_SENSE - ADC_BAT_SENSE)*1000/68; //68mohm
+        ICharging = (ADC_I_SENSE - ADC_BAT_SENSE)*1000/56; //68mohm to 56mohm
     }
     else
     {
@@ -3008,7 +3093,7 @@ void mt_battery_notify_check(void)
 
 void check_battery_exist(void)
 {
-#if 1 //hongzhe-dbg defined(CONFIG_DIS_CHECK_BATTERY)
+#if defined(CONFIG_DIS_CHECK_BATTERY)
     if (Enable_BATDRV_LOG == 1) {
         printk("[BATTERY] Disable check battery exist.\n");
     }
@@ -3029,7 +3114,11 @@ void check_battery_exist(void)
         {
             printk("[BATTERY] Battery is not exist, power off FAN5405 and system (%d)\n", baton_count);
             pchr_turn_off_charging_fan5405();
+/* Vanzo:zhangqingzhan on: Sat, 09 Mar 2013 16:39:00 +0800
+ * TODO:dele the reset
             arch_reset(0,NULL);      
+ */
+// End of Vanzo: zhangqingzhan
         }
     }    
 #endif
@@ -3050,7 +3139,6 @@ void BAT_thread_fan5405(void)
     int BAT_status = 0;
     //kal_uint32 tmp32;	
     int ret_val=0;
-	char reg_val;
 
     if (Enable_BATDRV_LOG == 1) {
         
@@ -3061,35 +3149,6 @@ void BAT_thread_fan5405(void)
         xlog_printk(ANDROID_LOG_DEBUG, "Power/Battery", "[BATTERY_TOP] LOG. %d,%d,%d,%d,%d----------------------------\n", 
             BATTERY_AVERAGE_SIZE, CHARGING_FULL_CURRENT, RECHARGING_VOLTAGE, gFG_15_vlot, mtk_jeita_support_flag);
 #endif
-
-
-fan5405_read_interface(0x00, &reg_val, 0xff, 0 );
-printk("<HONGZHE-FAN5405> fan5405_read_interface 0x00 = %x \n", reg_val);
-
-
-fan5405_read_interface(0x01, &reg_val, 0xff, 0 );
-printk("<HONGZHE-FAN5405> fan5405_read_interface 0x01 = %x \n", reg_val);
-
-
-fan5405_read_interface(0x02, &reg_val, 0xff, 0 );
-printk("<HONGZHE-FAN5405> fan5405_read_interface 0x02 = %x \n", reg_val);
-
-
-fan5405_read_interface(0x03, &reg_val, 0xff, 0 );
-printk("<HONGZHE-FAN5405> fan5405_read_interface 0x03 = %x \n", reg_val);
-
-
-fan5405_read_interface(0x04, &reg_val, 0xff, 0 );
-printk("<HONGZHE-FAN5405> fan5405_read_interface 0x04 = %x \n", reg_val);
-
-
-fan5405_read_interface(0x05, &reg_val, 0xff, 0 );
-printk("<HONGZHE-FAN5405> fan5405_read_interface 0x05 = %x \n", reg_val);
-
-
-fan5405_read_interface(0x06, &reg_val, 0xff, 0 );
-printk("<HONGZHE-FAN5405> fan5405_read_interface 0x06 = %x \n", reg_val);
-
     }    
    
 	if (Enable_BATDRV_LOG == 1) {
@@ -3394,7 +3453,41 @@ printk("<HONGZHE-FAN5405> fan5405_read_interface 0x06 = %x \n", reg_val);
         
         /* Charging flow begin */
         BMT_status.total_charging_time += BAT_TASK_PERIOD;
-        pchr_turn_on_charging_fan5405();        
+        pchr_turn_on_charging_fan5405();      
+
+	fan5405_dump_register();
+
+        unsigned char val=0;
+        unsigned int i;
+        val = fan5405_dump5_register(5);
+        printk("=========================test 0x05 reg:[0x%x]=0x%x \n", 5, val);
+        i = 0;
+        while((val&0x4) != 0x4)
+        {
+            i++;
+            printk("fan5405 in error===========reg5 = 0x%x\n",val);
+            temp_init_flag = 0;
+            fan5405_dump_register();
+            pchr_turn_on_charging_fan5405();
+
+            val = fan5405_dump5_register(5);
+            if(i > 10)break;
+        }
+        val = fan5405_dump5_register(2);
+        printk("==========================test 0x02 reg:[0x%x]=0x%x ", 2, val);
+        i = 0; 
+        while(val != 0x8e)
+        {    
+            i++; 
+            printk("fan5405 in error===========reg2 = 0x%x\n",val);
+            temp_init_flag = 0;
+            fan5405_dump_register();
+            pchr_turn_on_charging_fan5405();
+
+            val = fan5405_dump5_register(2);
+            if(i > 10)break;
+        }    
+
         if (Enable_BATDRV_LOG >= 1) {
             printk("[BATTERY:fan5405] Total charging timer=%ld \n", 
                 BMT_status.total_charging_time);    
@@ -4627,7 +4720,6 @@ EXPORT_SYMBOL(force_get_tbat);
 static int mt6320_battery_resume(struct platform_device *dev)
 {
     //xlog_printk(ANDROID_LOG_INFO, "Power/Battery", "******** MT6320 battery driver resume!! ********\n" );
-
 #if defined(CONFIG_POWER_EXT)
 #else        
     if(slp_get_wake_reason() == WR_PCM_TIMER)

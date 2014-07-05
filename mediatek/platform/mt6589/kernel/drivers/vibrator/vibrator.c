@@ -111,6 +111,15 @@ static int vibr_Enable(void)
 			ldo_state=1;
 		}
 		*/
+		#if (defined(VIB_VOL30))
+		if(!hwPowerOn(MT65XX_POWER_LDO_VIBR, VOL_3000, "VIBR")) {
+			printk("Set VOL_3000 fail!\n");
+		}
+		#elif (defined(VIB_VOL33))
+		if(!hwPowerOn(MT65XX_POWER_LDO_VIBR, VOL_3300, "VIBR")) {
+			printk("Set VOL_3300 fail!\n");
+		}
+		#endif
 		dct_pmic_VIBR_enable(1);
 		printk("vibrator enable register = 0x%x\n", vibr_pmic_pwrap_read(0x0466));
 		printk("[vibrator]vibr_Enable After\n");

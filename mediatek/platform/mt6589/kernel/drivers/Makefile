@@ -50,6 +50,3 @@ obj-$(CONFIG_MTK_ETM) += mt_etm/
 ifeq ($(HAVE_CMMB_FEATURE),yes)
 obj-m += cmmbdrv/
 endif
-
-obj-$(CONFIG_GSL_ALG_ID) += gslx680/gsl_alg.o
-gslx680/gsl_alg-objs += gslx680/gsl_point_id.o

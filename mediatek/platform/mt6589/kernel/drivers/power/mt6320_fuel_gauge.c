@@ -2303,7 +2303,7 @@ void fgauge_Normal_Mode_Work(void)
 //2. Calculate battery capacity by VBAT    
     gFG_capacity_by_v = fgauge_read_capacity_by_v();
 
-	if(gFG_booting_counter_I_FLAG == 0) {
+	if(gFG_booting_counter_I_FLAG == 1) { 
 		gFG_capacity_by_v_init = gFG_capacity_by_v;
 	}
 //3. Calculate battery capacity by Coulomb Counter
@@ -2320,9 +2320,11 @@ void fgauge_Normal_Mode_Work(void)
         gFG_capacity_by_v = fgauge_read_capacity_by_v();
 		xlog_printk(ANDROID_LOG_INFO, "Power/Battery", "[FGADC] get_hw_ocv=%d, HW_SOC=%d, SW_SOC = %d\n", 
 			gFG_voltage, gFG_capacity_by_v, gFG_capacity_by_v_init);
-		// compare with hw_ocv & sw_ocv, check if less than or equal to 5% tolerance 
-		if (abs(gFG_capacity_by_v_init - gFG_capacity_by_v) > 5) {
-			gFG_capacity_by_v = gFG_capacity_by_v_init;
+		if (upmu_is_chr_det() == KAL_TRUE) {
+			// compare with hw_ocv & sw_ocv, check if less than or equal to 5% tolerance 
+			if (abs(gFG_capacity_by_v_init - gFG_capacity_by_v) > 5) {
+				gFG_capacity_by_v = gFG_capacity_by_v_init;
+			}
 		}
         //-------------------------------------------------------------------------------
         g_rtc_fg_soc = get_rtc_spare_fg_value();
@@ -2615,7 +2617,13 @@ void fgauge_initialization(void)
 
     gFG_columb = fgauge_read_columb();
     gFG_temp = fgauge_read_temperature();
+/* Vanzo:maxiaojun on: Fri, 07 Jun 2013 16:19:45 +0800
+ * reinit fgauge
     gFG_capacity = fgauge_read_capacity(0);         
+ */
+    fgauge_read_capacity(0);
+    gFG_capacity = fgauge_read_capacity(1);
+// End of Vanzo:maxiaojun
 
     gFG_columb_init = gFG_columb;
     gFG_capacity_by_c_init = gFG_capacity;

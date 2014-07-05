@@ -43,6 +43,9 @@
 
 #include <linux/aee.h>
 
+#include <linux/switch.h>
+#include <linux/kthread.h>
+
 #define KPD_NAME	"mtk-kpd"
 
 /* Keypad registers */
@@ -67,10 +70,6 @@
 #define kpd_print(fmt, arg...)	printk(KPD_SAY fmt, ##arg)
 #else
 #define kpd_print(fmt, arg...)	do {} while (0)
-#endif
-#ifdef CUST_EINT_KPD_SLIDE_NUM
-	#define CUST_EINT_KPD_SIDE_NUM CUST_EINT_KPD_SLIDE_NUM
-	#define KPD_HAS_SIDE_KEY_EVENT
 #endif
 
 
@@ -123,6 +122,19 @@ static DECLARE_TASKLET(kpd_pwrkey_tasklet, kpd_pwrkey_handler, 0);
 static u8 kpd_pwrkey_state = !KPD_PWRKEY_POLARITY;
 #endif
 
+#if KPD_MUTEKEY_USE_EINT
+#if GPIO_MUTE_BUTTON_PIN_EXT
+extern s32 mt_set_gpio_mode_ext(u32 pin, u32 mode);
+extern s32 mt_set_gpio_dir_ext(u32 pin, u32 dir);
+extern s32 mt_get_gpio_in_ext(u32 pin);
+#endif
+static struct switch_dev Mutekey_Data;
+static struct work_struct mutekey_work;
+static struct workqueue_struct * mutekey_workqueue = NULL;
+static DECLARE_WAIT_QUEUE_HEAD(waiter);
+static int mutekey_status = -1;
+#endif
+
 /* for Power key using PMIC */
 /*********************************************************************/
 #if 0//KPD_PWRKEY_USE_PMIC //for 77 chip and earlier version   power key bug, has fixed on 89 chip
@@ -131,11 +143,6 @@ static void kpd_pwrkey_handler(struct work_struct *work);
 static DECLARE_WORK(pwrkey_pmic_work, kpd_pwrkey_handler);
 #endif
 /*********************************************************************/
-#ifdef KPD_HAS_SIDE_KEY_EVENT 
-static void kpd_side_key_handler(unsigned long data);
-static DECLARE_TASKLET(kpd_side_key_tasklet, kpd_side_key_handler, 0);
-static u8 side_key_state;
-#endif
 
 /* for keymap handling */
 static void kpd_keymap_handler(unsigned long data);
@@ -562,62 +569,6 @@ static void kpd_slide_eint_handler(void)
 	tasklet_schedule(&kpd_slide_tasklet);
 }
 #endif
-#ifdef KPD_HAS_SIDE_KEY_EVENT
-
-static void kpd_side_key_eint_handler(void)
-{
-	tasklet_schedule(&kpd_side_key_tasklet);
-}
-
-static void kpd_side_key_handler(unsigned long data)
-{  
-#ifdef UP_SILENT
-    if(!side_key_state)
-#else
-    if(side_key_state)
-#endif
-    {
-    #if 1
-	kpd_backlight_handler(true, KEY_VOLUMEUP);
-	input_report_key(kpd_input_dev, KEY_VOLUMEUP, true);
-	input_sync(kpd_input_dev);
-	kpd_backlight_handler(false, KEY_VOLUMEUP);
-	input_report_key(kpd_input_dev, KEY_VOLUMEUP, false);
-	input_sync(kpd_input_dev);
-    #endif
-        printk("<<<<SIDE KEY>>>> kpd_side_key_handler : KEY_SILENT_DOWN\n");  
-    }
-    else
-    {
-    #if 1
-	kpd_backlight_handler(true, KEY_VOLUMEDOWN);
-	input_report_key(kpd_input_dev, KEY_VOLUMEDOWN, true);
-	input_sync(kpd_input_dev);
-	kpd_backlight_handler(false, KEY_VOLUMEDOWN);
-	input_report_key(kpd_input_dev, KEY_VOLUMEDOWN, false);
-	input_sync(kpd_input_dev);
-     #endif
-        printk("<<<<SIDE KEY>>>> kpd_side_key_handler : KEY_SILENT_UP\n");  
-    }
-
-	if(side_key_state) {
-		mt_set_gpio_pull_select(GPIO_KPD_SIDE_EINT_PIN, 0);
-	} else {
-		mt_set_gpio_pull_select(GPIO_KPD_SIDE_EINT_PIN, 1);
-	}
-      
-    side_key_state = !side_key_state;
-
-
-    //mt65xx_eint_set_sens(CUST_EINT_KPD_SIDE_NUM, CUST_EINT_KPD_SIDE_SENSITIVE);
-    //mt65xx_eint_set_hw_debounce(CUST_EINT_KPD_SIDE_NUM,  CUST_EINT_KPD_SIDE_DEBOUNCE_CN);
-    mt65xx_eint_registration(CUST_EINT_KPD_SIDE_NUM, CUST_EINT_KPD_SLIDE_DEBOUNCE_EN, !side_key_state,  kpd_side_key_eint_handler, 0);
-
-mt65xx_eint_unmask(CUST_EINT_KPD_SIDE_NUM);
-}
-#endif
-
-
 
 #if KPD_PWRKEY_USE_EINT
 static void kpd_pwrkey_handler(unsigned long data)
@@ -646,6 +597,54 @@ static void kpd_pwrkey_eint_handler(void)
 	tasklet_schedule(&kpd_pwrkey_tasklet);
 }
 #endif
+
+#if KPD_MUTEKEY_USE_EINT
+static void kpd_mutekey_work_callback(struct work_struct *work)
+{
+	bool Gpio_signal = 0;
+
+#if GPIO_MUTE_BUTTON_PIN_EXT
+	/*mt_set_gpio_mode_ext(GPIO_MUTE_BUTTON_PIN, GPIO_MUTE_BUTTON_PIN_M_GPIO);
+	mt_set_gpio_dir_ext(GPIO_MUTE_BUTTON_PIN, GPIO_DIR_IN);
+
+	Gpio_signal = mt_get_gpio_in_ext(GPIO_MUTE_BUTTON_PIN);  // get signal
+	*/
+	mt_set_gpio_mode(GPIO_KPD_MUTEKEY_EINT_PIN,GPIO_KPD_MUTEKEY_EINT_PIN_M_EINT);
+	mt_set_gpio_dir(GPIO_KPD_MUTEKEY_EINT_PIN,GPIO_DIR_IN);
+	mt_set_gpio_pull_enable(GPIO_KPD_MUTEKEY_EINT_PIN,GPIO_PULL_ENABLE);
+	mt_set_gpio_pull_select(GPIO_KPD_MUTEKEY_EINT_PIN,GPIO_PULL_UP);
+	Gpio_signal = mt_get_gpio_in_ext(GPIO_KPD_MUTEKEY_EINT_PIN);  // get signal
+#else
+	mt_set_gpio_mode(GPIO_MUTE_BUTTON_PIN, GPIO_MUTE_BUTTON_PIN_M_GPIO);
+	mt_set_gpio_dir(GPIO_MUTE_BUTTON_PIN, GPIO_DIR_IN);
+
+	Gpio_signal = mt_get_gpio_in(GPIO_MUTE_BUTTON_PIN);  // get signal
+#endif
+     printk("mutekey Gpio_signal=%d \n", Gpio_signal);
+     printk("mutekey mutekey_status=%d \n", mutekey_status);
+	if (Gpio_signal == 1) {
+		if (1 != mutekey_status) {
+			mutekey_status = 1;
+			switch_set_state((struct switch_dev *)&Mutekey_Data, 0);
+		}
+	} else {
+		if (0 != mutekey_status) {
+			mutekey_status = 0;
+			switch_set_state((struct switch_dev *)&Mutekey_Data, 1);
+		}
+	}
+}
+
+static int mutekey_kthread(void *unused)
+{
+	int ret = 0;
+	while (1) {
+		queue_work(mutekey_workqueue, &mutekey_work);
+		wait_event_interruptible_timeout(waiter, ret!=0, HZ);
+	}
+}
+#endif
+
 /*********************************************************************/
 #if 0//KPD_PWRKEY_USE_PMIC //for 77 chip and earlier version   power key bug, has fixed on 89 chip
 static void kpd_pwrkey_handler(struct work_struct *work)
@@ -1214,10 +1213,31 @@ for(j = 0; j < 6; j++) {
 /**********************disable kpd as wake up source operation********************************/
 	#ifndef EVB_PLATFORM
 	kpd_print("disable kpd as wake up source operation!\n");
+        /* Vanzo:zhangqingzhan on: Sat, 06 Apr 2013 11:59:16 +0800
+ *for keypad wake up system
 	upmu_set_rg_smps_autoff_dis(0x00);
+ */
+	upmu_set_rg_smps_autoff_dis(0x01);
+        // End of Vanzo:zhangqingzhan
 	#endif
 /****************************************************************************************/
 
+
+#if KPD_MUTEKEY_USE_EINT
+	Mutekey_Data.name = "mutestatus";
+	Mutekey_Data.dev = kpd_dev.this_device;
+	Mutekey_Data.index = 0;
+	Mutekey_Data.state = 1;
+
+	r = switch_dev_register(&Mutekey_Data);
+	if (r) {
+		printk("switch_dev_register returned %d \n", r);
+		return r;
+	}
+	mutekey_workqueue = create_singlethread_workqueue("Mutekey");
+	INIT_WORK(&mutekey_work, kpd_mutekey_work_callback);
+	kthread_run(mutekey_kthread, NULL, "mutekey_kthread");
+#endif
 
 #if 0
 	/* KCOL0: GPIO103: KCOL1: GPIO108, KCOL2: GPIO105 input + pull enable + pull up */
@@ -1252,27 +1272,6 @@ for(j = 0; j < 6; j++) {
 	mt_set_gpio_pull_enable(95, 0);		
 	mt_set_gpio_pull_select(95, 0);
 #endif
-#ifdef KPD_HAS_SIDE_KEY_EVENT
-    mt_set_gpio_mode(GPIO_KPD_SIDE_EINT_PIN, GPIO_KPD_SIDE_EINT_PIN_M_GPIO);
-    mt_set_gpio_dir(GPIO_KPD_SIDE_EINT_PIN, GPIO_DIR_IN);
-    side_key_state = mt_get_gpio_in(GPIO_KPD_SIDE_EINT_PIN);
-
-    printk("<<<<SIDE KEY>>>> Register eint : state = %d \n", side_key_state);
-
-    mt_set_gpio_mode(GPIO_KPD_SIDE_EINT_PIN, GPIO_KPD_SIDE_EINT_PIN_M_EINT);
-    mt_set_gpio_dir(GPIO_KPD_SIDE_EINT_PIN, GPIO_DIR_IN);
-	mt_set_gpio_pull_enable(GPIO_KPD_SIDE_EINT_PIN, GPIO_PULL_ENABLE);
-	if(side_key_state) {
-		mt_set_gpio_pull_select(GPIO_KPD_SIDE_EINT_PIN, 0);
-	} else {
-		mt_set_gpio_pull_select(GPIO_KPD_SIDE_EINT_PIN, 1);
-	}
-    	
-    mt65xx_eint_set_sens(CUST_EINT_KPD_SIDE_NUM, CUST_EINT_KPD_SLIDE_SENSITIVE);
-    mt65xx_eint_set_hw_debounce(CUST_EINT_KPD_SIDE_NUM,  CUST_EINT_KPD_SLIDE_DEBOUNCE_CN);
-    mt65xx_eint_registration(CUST_EINT_KPD_SIDE_NUM, CUST_EINT_KPD_SLIDE_DEBOUNCE_EN, !side_key_state,  kpd_side_key_eint_handler, 0);
-
-#endif
 	return 0;
 }
 
@@ -1282,7 +1281,11 @@ static int kpd_pdrv_remove(struct platform_device *pdev)
 	return 0;
 }
 
+/* Vanzo:zhangqingzhan on: Sat, 06 Apr 2013 12:00:07 +0800
+ *for keypad wake up system
 #define MTK_KP_WAKESOURCE//this is for auto set wake up source
+ */
+// End of Vanzo:zhangqingzhan
 static int incall = 0;//this is for whether phone in call state judgement when resume
 
 #ifndef CONFIG_HAS_EARLYSUSPEND

@@ -842,7 +842,7 @@ void cust_pmic_interrupt_en_setting(void)
     upmu_set_rg_int_en_vproc(0);
     upmu_set_rg_int_en_rtc(1);
     upmu_set_rg_int_en_audio(0);
-    //upmu_set_rg_int_en_accdet(1);
+    upmu_set_rg_int_en_accdet(1);
     upmu_set_rg_int_en_homekey(1);
     upmu_set_rg_int_en_ldo(0);    
 }
@@ -949,6 +949,12 @@ void watchdog_int_handler(void)
     
     ret=pmic_config_interface(INT_STATUS0,0x1,0x1,8);    
 }
+
+#if defined(NT35596_FHD_DSI_VDO_TRULY)
+extern	void lcm_suspend(void);
+extern	unsigned int disp_set_backlight(int level);
+#endif
+
 void pwrkey_int_handler(void)
 {
     kal_uint32 ret=0;
@@ -969,6 +975,10 @@ void pwrkey_int_handler(void)
 				xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[pmic_thread_kthread] timer_pos = %ld, timer_pre = %ld, timer_pos-timer_pre = %ld, long_pwrkey_press = %d\r\n",timer_pos, timer_pre, timer_pos-timer_pre, long_pwrkey_press);
 				if(long_pwrkey_press)   //500ms
 				{
+#if defined(NT35596_FHD_DSI_VDO_TRULY)
+					disp_set_backlight(0);
+					lcm_suspend();
+#endif
 					xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[pmic_thread_kthread] Power Key Pressed during kernel power off charging, reboot OS\r\n");
 					arch_reset(0, NULL);
 				}
@@ -4305,6 +4315,11 @@ static int pmic_mt6320_probe(struct platform_device *dev)
     //#ifndef USER_BUILD_KERNEL
     //PMIC_DUMP_ALL_Register();
     //#endif
+    /* Vanzo:zhangqingzhan on: Tue, 29 Jan 2013 19:20:55 +0800
+     *for lcm power first
+     */
+    hwPowerOn(MT65XX_POWER_LDO_VGP6, VOL_3000, "LCM");
+    // End of Vanzo:zhangqingzhan
 
     #if defined(CONFIG_POWER_EXT)
     ret_val = pmic_config_interface(0x002E,0x0010,0x00FF,0);

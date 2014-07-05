@@ -35,13 +35,6 @@ extern s32 mt_set_gpio_pull_enable(u32 pin, u32 enable);
 #include "mach/mt_clkmgr.h"
 #include <linux/vmalloc.h>
 #include "mtkfb_info.h"
-
-#include <linux/leds.h>
-#include <cust_leds.h>
-
-extern int mt65xx_leds_brightness_set(enum mt65xx_led_type type, enum led_brightness value);
-
-
 extern unsigned int lcd_fps;
 extern BOOL is_early_suspended;
 extern struct semaphore sem_early_suspend;
@@ -508,7 +501,12 @@ const LCM_DRIVER *disp_drv_get_lcm_driver(const char *lcm_name)
 		}
 	}
 done:
+/* Vanzo:zhangqingzhan on: Tue, 11 Sep 2012 18:36:49 +0800
+* for lcm lcm_compare_id
 	return lcm_drv;
+*/
+	return lcm;
+// End of Vanzo:zhangqingzhan
 }
 
 
@@ -933,11 +931,6 @@ DISP_STATUS DISP_PowerEnable(BOOL enable)
     if (!is_ipoh_bootup)
         needStartEngine = true;
 
-    if (enable && lcm_drv && lcm_drv->resume_power)
-    {
-		lcm_drv->resume_power();
-    }
-
 	ret = (disp_drv->enable_power) ?
 		(disp_drv->enable_power(enable)) :
 		DISP_STATUS_NOT_IMPLEMENTED;
@@ -945,31 +938,13 @@ DISP_STATUS DISP_PowerEnable(BOOL enable)
     if (enable) {
         DAL_OnDispPowerOn();
     }
-    else if (lcm_drv && lcm_drv->suspend_power)
-   {
-        lcm_drv->suspend_power();
-    }
-
+	
 	up(&sem_update_screen);
 
 
 	return ret;
 }
 
-/* hongzhe.liu + */
-static BOOL s_backlight_enabled = TRUE;
-void DISP_BacklightEnable(BOOL enable)
-{
-	printk("\r>>>>>>>>>>>>>>>>>>>  HONGZHE:  DISP_BacklightEnable enable = %d\n", enable);
-	s_backlight_enabled = enable;
-}
-
-BOOL DISP_GetBacklightEnable()
-{
-	printk("\r>>>>>>>>>>>>>>>>>>>  HONGZHE:  DISP_GetBacklightEnable enable = %d\n", s_backlight_enabled);
-	return s_backlight_enabled;
-}
-/* hongzhe.liu - */
 
 DISP_STATUS DISP_PanelEnable(BOOL enable)
 {
@@ -1007,11 +982,7 @@ DISP_STATUS DISP_PanelEnable(BOOL enable)
 			DSI_SetMode(CMD_MODE);
 		}
         mutex_lock(&LcmCmdMutex);
-		printk("\r>>>>>>>>>>>>>>>>>>>  HONGZHE:  lcm drv resume\n");
 		lcm_drv->resume();
-/* hongzhe.liu + : resolve backlight cant be closed when als auto control backlight */		
-		DISP_BacklightEnable(TRUE);
-/* hongzhe.liu - : resolve backlight cant be closed when als auto control backlight */
 		
 		if(lcm_drv->check_status)
 			lcm_drv->check_status();
@@ -1048,14 +1019,7 @@ DISP_STATUS DISP_PanelEnable(BOOL enable)
 		}
 
         mutex_lock(&LcmCmdMutex);
-
-		printk("\r>>>>>>>>>>>>>>>>>>>  HONGZHE:  lcm drv suspend\n");
-/* hongzhe.liu + : resolve backlight cant be closed when als auto control backlight */
-		mt65xx_leds_brightness_set(MT65XX_LED_TYPE_LCD, 0 /*LED_OFF*/);
-		DISP_BacklightEnable(FALSE);
-/* hongzhe.liu - : resolve backlight cant be closed when als auto control backlight */	
 		lcm_drv->suspend();
-
         mutex_unlock(&LcmCmdMutex);
 	}
 

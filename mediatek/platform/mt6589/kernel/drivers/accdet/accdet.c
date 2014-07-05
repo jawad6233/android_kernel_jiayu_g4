@@ -281,9 +281,9 @@ void inline disable_accdet(void)
 	
 	//disable accdet irq
 	pmic_pwrap_write(INT_CON_ACCDET_CLR, RG_ACCDET_IRQ_CLR);
+	mutex_lock(&accdet_eint_irq_sync_mutex);
 	clear_accdet_interrupt();
 	udelay(200);
-	mutex_lock(&accdet_eint_irq_sync_mutex);
 	while(pmic_pwrap_read(ACCDET_IRQ_STS) & IRQ_STATUS_BIT)
 	{
 		ACCDET_DEBUG("[Accdet]check_cable_type: Clear interrupt on-going....\n");
@@ -938,6 +938,10 @@ static inline void check_cable_type(void)
 				 #else
 				  mutex_lock(&accdet_eint_irq_sync_mutex);
 				  if(1 == eint_accdet_sync_flag) {
+/* Vanzo:maxiaojun on: Thu, 18 Jul 2013 17:11:29 +0800
+ */
+                    if(cable_type == NO_DEVICE)
+// End of Vanzo:maxiaojun
 					cable_type = HEADSET_NO_MIC;
 					accdet_status = HOOK_SWITCH;
 				  }else {
@@ -1182,6 +1186,10 @@ static inline void check_cable_type(void)
             {
 				mutex_lock(&accdet_eint_irq_sync_mutex);
 		        if(1 == eint_accdet_sync_flag) {
+/* Vanzo:maxiaojun on: Thu, 18 Jul 2013 17:12:25 +0800
+ */
+                    if(cable_type == NO_DEVICE)
+// End of Vanzo:maxiaojun
 					cable_type = HEADSET_NO_MIC;
 		        	accdet_status = HOOK_SWITCH;
                 	ACCDET_DEBUG("[Accdet]HOOK_SWITCH state not change!\n");
@@ -1432,7 +1440,12 @@ static inline void accdet_init(void)
 
 	ACCDET_DEBUG("ACCDET reset function test: reset finished!! \n\r");
 	pmic_pwrap_write(TOP_RST_ACCDET_CLR, ACCDET_RESET_CLR);
-		
+
+	//accdet IRQ enable,  PMIC driver has done this for accdet driver!!(pmic_mt6320.c)
+	pmic_pwrap_write(INT_CON_ACCDET_SET, RG_ACCDET_IRQ_SET);
+	ACCDET_DEBUG("[Accdet]accdet IRQ enable INT_CON_ACCDET=0x%x!\n", pmic_pwrap_read(INT_CON_ACCDET));	
+
+	
 	//init  pwm frequency and duty
     pmic_pwrap_write(ACCDET_PWM_WIDTH, REGISTER_VALUE(cust_headset_settings.pwm_width));
     pmic_pwrap_write(ACCDET_PWM_THRESH, REGISTER_VALUE(cust_headset_settings.pwm_thresh));
@@ -1454,10 +1467,7 @@ static inline void accdet_init(void)
     pmic_pwrap_write(ACCDET_DEBOUNCE1, cust_headset_settings.debounce1);
     pmic_pwrap_write(ACCDET_DEBOUNCE3, cust_headset_settings.debounce3);	
    #endif
-    pmic_pwrap_write(ACCDET_IRQ_STS, pmic_pwrap_read(ACCDET_IRQ_STS)&(~IRQ_CLR_BIT));
-	ACCDET_DEBUG("[Accdet]init:IRQ Clear bit:[0x%x]!\n", pmic_pwrap_read(ACCDET_IRQ_STS));
-	pmic_pwrap_write(INT_CON_ACCDET_SET, RG_ACCDET_IRQ_SET);
-	ACCDET_DEBUG("[Accdet]accdet IRQ enable INT_CON_ACCDET=0x%x!\n", pmic_pwrap_read(INT_CON_ACCDET));
+    
     #ifdef ACCDET_EINT
     // disable ACCDET unit
 	pre_state_swctrl = pmic_pwrap_read(ACCDET_STATE_SWCTRL);

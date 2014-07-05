@@ -256,7 +256,11 @@ static long int get_current_time_us(void)
 #endif
 static void lcm_mdelay(UINT32 ms)
 {
-    udelay(1000 * ms);
+/* Vanzo:zhangqingzhan on: Thu, 28 Mar 2013 17:46:29 +0800
+*fix bug 28921
+*/
+ udelay(1000 * ms);
+// End of Vanzo:zhangqingzhan
 }
 void DSI_Enable_Log(bool enable)
 {
@@ -2869,15 +2873,12 @@ DSI_STATUS DSI_Write_T3_INS(DSI_T3_INS *t3)
 
 	return DSI_STATUS_OK;
 }
-#ifdef PROJECT_E957//shaokai
-void DSI_Continuous_clock(void)
-{
-	DSI_TXRX_CTRL_REG tmp_reg;
 
-	tmp_reg=DSI_REG->DSI_TXRX_CTRL;
-	tmp_reg.HSTX_CKLP_EN = 0;
-}
-#endif
+/* Vanzo:changyuchao on: Mon, 11 Mar 2013 15:30:55 +0800
+ *   *      * *for lcm lg4591_lg5_xinli
+ *     * */
+extern LCM_DRIVER* lcm_drv;
+// End of Vanzo:changyuchao
 DSI_STATUS DSI_TXRX_Control(bool cksm_en, 
                                   bool ecc_en, 
                                   unsigned char lane_num, 
@@ -2892,6 +2893,14 @@ DSI_STATUS DSI_TXRX_Control(bool cksm_en,
     
     tmp_reg=DSI_REG->DSI_TXRX_CTRL;
 
+    /* Vanzo:changyuchao on: Mon, 11 Mar 2013 15:30:55 +0800
+     * * *for lcm lg4591_lg5_xinli
+     * * */
+    if(lcm_drv->name == "lg4591_dsi")
+	    null_packet_en = 1;
+    else
+	    null_packet_en = 0;
+    // End of Vanzo:changyuchao
     ///TODO: parameter checking
 //    tmp_reg.CKSM_EN=cksm_en;
 //    tmp_reg.ECC_EN=ecc_en;
@@ -2908,10 +2917,6 @@ DSI_STATUS DSI_TXRX_Control(bool cksm_en,
     tmp_reg.NULL_EN = null_packet_en;
     tmp_reg.MAX_RTN_SIZE = max_return_size;
 	tmp_reg.HSTX_CKLP_EN = hstx_cklp_en;
-	#ifdef PROJECT_E957//shaokai
-	tmp_reg.HSTX_CKLP_EN = 0;
-	#endif
-
     OUTREG32(&DSI_REG->DSI_TXRX_CTRL, AS_UINT32(&tmp_reg));
 
     return DSI_STATUS_OK;
@@ -3547,7 +3552,7 @@ DSI_STATUS Wait_WakeUp(void)
 DSI_STATUS DSI_DumpRegisters(void)
 {
     UINT32 i;
-#if 0 //hongzhe
+
     DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "---------- Start dump DSI registers ----------\n");
     
     for (i = 0; i < sizeof(DSI_REGS); i += 4)
@@ -3564,7 +3569,7 @@ DSI_STATUS DSI_DumpRegisters(void)
     {
         DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI", "DSI_PHY+%04x(%p) : 0x%08x\n", i, (UINT32*)(MIPI_CONFIG_BASE+0x800+i), INREG32((MIPI_CONFIG_BASE+0x800+i)));
     }
-#endif
+
     return DSI_STATUS_OK;
 }
 

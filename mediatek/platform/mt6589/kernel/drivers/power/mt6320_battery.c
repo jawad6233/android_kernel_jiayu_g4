@@ -65,8 +65,13 @@
 #include <mach/upmu_hw.h>
 
 #include <mach/mt_sleep.h>
+#include <mach/mt_typedefs.h>
+#include <mach/mt_gpt.h>
+#include <mach/mt_boot.h>
+#include <mach/mt_gpio.h>
+#include <cust_gpio_usage.h>
 
-int Enable_BATDRV_LOG = 1; //2;
+int Enable_BATDRV_LOG = 2;
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //// Thermal related flags
@@ -88,6 +93,16 @@ kal_bool temp_error_recovery_chr_flag =KAL_TRUE;
 int mtk_jeita_support_flag=1;
 #else
 int mtk_jeita_support_flag=0;
+#endif
+
+#if defined(DCT_V936) || defined(DCT_K7T) || defined(DCT_K7W)
+int gpio_number   = GPIO_SWCHARGER_EN_PIN; 
+int gpio_off_mode = GPIO_MODE_GPIO;
+int gpio_off_dir  = GPIO_DIR_OUT;
+int gpio_off_out  = GPIO_OUT_ONE;
+int gpio_on_mode  = GPIO_MODE_GPIO;
+int gpio_on_dir   = GPIO_DIR_OUT;
+int gpio_on_out   = GPIO_OUT_ZERO;
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -1644,6 +1659,11 @@ void pchr_turn_off_charging (void)
     if (Enable_BATDRV_LOG == 1) {
         xlog_printk(ANDROID_LOG_DEBUG, "Power/Battery", "[BATTERY] pchr_turn_off_charging !\r\n");
     }
+	#if defined(DCT_V936) || defined(DCT_K7T) || defined(DCT_K7W)
+	mt_set_gpio_mode(gpio_number,gpio_off_mode);  
+	mt_set_gpio_dir(gpio_number,gpio_off_dir);
+	mt_set_gpio_out(gpio_number,gpio_off_out);
+	#endif
 
     upmu_set_rg_chrwdt_int_en(0);    // CHRWDT_INT_EN
     upmu_set_rg_chrwdt_en(0);        // CHRWDT_EN
@@ -1733,6 +1753,12 @@ int set_bat_charging_current_limit(int current_limit)
 
 void pchr_turn_on_charging (void)
 {
+	#if defined(DCT_V936) || defined(DCT_K7T) || defined(DCT_K7W)
+    mt_set_gpio_mode(gpio_number,gpio_on_mode);  
+    mt_set_gpio_dir(gpio_number,gpio_on_dir);
+    mt_set_gpio_out(gpio_number,gpio_on_out);
+	#endif
+
     if ( BMT_status.bat_charging_state == CHR_ERROR ) 
     {
         if (Enable_BATDRV_LOG == 1) {   

@@ -505,14 +505,6 @@ static struct platform_device mtk_multibridge_dev = {
     .id   = 0,
 };
 #endif
-
-#ifdef LVDS_MIPI//shaokai
-static struct platform_device mtk_multibridge_dev1 = {
-    .name = "sn65dsi8x",
-    .id   = 0,
-};
-#endif
-
 #ifdef MTK_HDMI_SUPPORT
 static struct platform_device mtk_hdmi_dev = {
     .name = "hdmitx",
@@ -556,6 +548,13 @@ static struct platform_device mt_spi_device = {
 struct platform_device usbacm_temp_device = {
 	.name	  ="USB_ACM_Temp_Driver",
 	.id		  = -1,
+};
+#endif
+
+#if defined(HALL_DEFAULT)
+struct platform_device hall_device = {
+	.name = "hall_driver",
+	.id = -1,
 };
 #endif
 
@@ -1467,6 +1466,14 @@ static struct platform_device actuator_dev = {
 	.name		  = "lens_actuator",
 	.id		  = -1,
 };
+static struct platform_device actuator_dev1 = {
+	.name		  = "lens_actuator1",
+	.id		  = -1,
+};
+static struct platform_device actuator0_dev = {
+	.name		  = "lens_actuator0",
+	.id		  = -1,
+};
 /*=======================================================================*/
 /* MT6575 jogball                                                        */
 /*=======================================================================*/
@@ -1625,13 +1632,7 @@ __init int mt6589_board_init(void)
         return retval;
     }
 #endif
-#ifdef LVDS_MIPI//shaokai
-    retval = platform_device_register(&mtk_multibridge_dev1);
-    printk("multibridge_driver_device \n!");
-    if (retval != 0){
-        return retval;
-    }
-#endif
+
 
 
 //=====SMI/M4U devices===========
@@ -1767,6 +1768,20 @@ __init int mt6589_board_init(void)
   }
 #endif
 
+#if defined(HALL_DEFAULT)
+	retval = platform_device_register(&hall_device);
+	printk("register hall device\n");
+
+	if(retval != 0)
+	{
+		printk("platform_device_register hall error:(%d)\n", retval);
+	}
+	else
+	{
+		printk("platform_device_register hall done!\n");
+	}
+#endif
+
 #if defined(CONFIG_MTK_ACCDET)
 
 
@@ -1810,14 +1825,6 @@ __init int mt6589_board_init(void)
         return retval;
     }
 #endif
-
-#if defined(CONFIG_MTK_TOUCHPANEL)
-    retval = platform_device_register(&mtk_tpd_dev);
-    if (retval != 0) {
-        return retval;
-    }
-#endif
-
 
 #if defined(MTK_SENSOR_SUPPORT)
 
@@ -1886,6 +1893,12 @@ __init int mt6589_board_init(void)
 	}
 #endif
 
+#if defined(CONFIG_MTK_TOUCHPANEL)
+    retval = platform_device_register(&mtk_tpd_dev);
+    if (retval != 0) {
+        return retval;
+    }
+#endif
 #if defined(CUSTOM_KERNEL_OFN)
     retval = platform_device_register(&ofn_driver);
     if (retval != 0){
@@ -1983,6 +1996,18 @@ retval = platform_device_register(&dummychar_device);
 //=======================================================================
 #if 1  //defined(CONFIG_ACTUATOR)
     retval = platform_device_register(&actuator_dev);
+    if (retval != 0){
+        return retval;
+    }
+#endif
+#if 1  //defined(CONFIG_ACTUATOR)
+    retval = platform_device_register(&actuator_dev1);
+    if (retval != 0){
+        return retval;
+    }
+#endif
+#if 1  //defined(CONFIG_ACTUATOR)
+    retval = platform_device_register(&actuator0_dev);
     if (retval != 0){
         return retval;
     }

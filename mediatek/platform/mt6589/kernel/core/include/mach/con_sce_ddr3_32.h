@@ -1,4 +1,4 @@
-#if defined(MTK_DISPLAY_HIGH_RESOLUTION)|| defined( MTK_1080P) //FIXME: the BW value is not ready. //hongzhe
+#ifdef MTK_1080P //FIXME: the BW value is not ready.
 /* video record mp4 */
 X_CON_SCE(CON_SCE_VR_MP4, 0x40105808, 0x00007801, 0x030FD807, 0x20205005, 0xA0A05002, 0xA0A05029)
 

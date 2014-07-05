@@ -31,6 +31,7 @@
 #include "mach/mt_clkmgr.h"
 #include "mach/mt_cpufreq.h"
 #include "mach/sync_write.h"
+#include "mach/mt_ptp.h"
 
 #include <mach/pmic_mt6320_sw.h>
 #include <mach/upmu_common.h>
@@ -133,7 +134,7 @@ static bool mt_cpufreq_ptpod_disable = false;
 static bool mt_cpufreq_ptpod_voltage_down = false;
 static bool mt_cpufreq_max_freq_overdrive = false;
 static bool mt_cpufreq_limit_max_freq_early_suspend = false;
-//remove P23 static bool mt_cpufreq_freq_table_allocated = false;
+static bool mt_cpufreq_freq_table_allocated = false;
 
 /* pmic volt by PTP-OD */
 static unsigned int mt_cpufreq_pmic_volt[8] = {0};
@@ -273,6 +274,9 @@ static void pmic_dvs_init_setting(void)
     ret=pmic_config_interface(0x22E, 0x2, 0x3, 6);      // set 0x2 to Reg[0x22E] bit 7:6
     ret=pmic_config_interface(0x250, 0x1, 0x3, 4);      // set 0x1 to Reg[0x250] bit 5:4
     ret=pmic_config_interface(0x252, 0x8, 0x7F, 0);  // set 0x8 to Reg[0x252] bit 6:0 (set VSRAM settling voltage offset=50mV)
+    #if ENHANCE_TURBO_OPP
+        ret=pmic_config_interface(0x254, 0x5D38, 0xFFFF, 0);  // set 0x5D38 to Reg[0x254] bit 15:0 (set VSRAM HB to 1.28125V, LB to 1.05V)
+    #endif
 }
 
 static void pmic_dvs_set_before_volt_change(void)
@@ -623,10 +627,9 @@ static int mt_setup_freqs_table(struct cpufreq_policy *policy, struct mt_cpu_fre
 {
     struct cpufreq_frequency_table *table;
     int i, ret;
-/* remove P23 
+
     if(mt_cpufreq_freq_table_allocated == false)
     {
-	*/
         table = kzalloc((num + 1) * sizeof(*table), GFP_KERNEL);
         if (table == NULL)
             return -ENOMEM;
@@ -641,13 +644,11 @@ static int mt_setup_freqs_table(struct cpufreq_policy *policy, struct mt_cpu_fre
         mt_cpu_freqs = freqs;
         mt_cpu_freqs_num = num;
         mt_cpu_freqs_table = table;
-/* remove P23	
+	
         mt_cpufreq_freq_table_allocated = true;
     }
 
     ret = cpufreq_frequency_table_cpuinfo(policy, mt_cpu_freqs_table);
-*/	
-	ret = cpufreq_frequency_table_cpuinfo(policy, table);
     if (!ret)
         cpufreq_frequency_table_get_attr(mt_cpu_freqs_table, policy->cpu);
 

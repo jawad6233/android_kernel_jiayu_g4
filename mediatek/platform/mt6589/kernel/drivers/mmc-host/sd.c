@@ -1354,6 +1354,11 @@ static void msdc_emmc_power(struct msdc_host *host,u32 on)
 			msdc_set_smt(host,1);
 			//msdc_ldo_power(on, MT65XX_POWER_LDO_VEMC_1V8, VOL_1800, &g_msdc0_io); default on
 			msdc_ldo_power(on, MT65XX_POWER_LDO_VEMC_3V3, VOL_3300, &g_msdc0_flash);
+                        /* Vanzo:zhangqingzhan on: Tue, 09 Apr 2013 14:26:01 +0800
+                         *for emmc power
+                         */
+                        mdelay(10);
+                        // End of Vanzo:zhangqingzhan
 			break;
 		case 4:
 			msdc_set_smt(host,1);

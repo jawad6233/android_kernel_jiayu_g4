@@ -1,4 +1,11 @@
-#if defined(MTK_DISPLAY_HIGH_RESOLUTION)|| defined( MTK_1080P) || (defined(FHD)) //FIXME: the BW value is not ready. //hongzhe
+/* Vanzo:zhangqingzhan on: Thu, 21 Mar 2013 20:02:27 +0800
+ *for fhd
+ */
+#if (defined(FHD))
+#define MTK_1080P
+#endif
+// End of Vanzo:zhangqingzhan
+#ifdef MTK_1080P //FIXME: the BW value is not ready.
 /* video record mp4 */
 X_CON_SCE(CON_SCE_VR_MP4, 0x40105808, 0x00007801, 0x030FD807, 0x20205005, 0xA0A05002, 0xA0A05029)
 

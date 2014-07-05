@@ -120,7 +120,13 @@ halReturn_t HalInstallIrqHandler(fwIrqHandler_t irqHandler)
 	mt_set_gpio_pull_select(GPIO_MHL_EINT_PIN,  GPIO_PULL_UP);
     mt_set_gpio_pull_enable(GPIO_MHL_EINT_PIN, true);
 #endif
+/* Vanzo:lubaoquan on: Tue, 21 May 2013 22:45:48 +0800
+ * TODO: replace this line with your comment
 	mt65xx_eint_set_sens(CUST_EINT_MHL_NUM, MT65xx_LEVEL_SENSITIVE);
+ */
+
+	mt65xx_eint_set_sens(CUST_EINT_MHL_NUM, MT65xx_EDGE_SENSITIVE);
+// End of Vanzo: lubaoquan
     mt65xx_eint_registration(CUST_EINT_MHL_NUM, 0, MT65XX_EINT_POL_NEG, &mhl8338_irq_handler, 0);
 
 	#if 0
