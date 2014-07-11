@@ -54,8 +54,8 @@ struct excel_info PartInfo[PART_NUM]={
 			{"expdb",10485760,0x3d80000, EMMC, 0,USER},
 			{"android",681574400,0x4780000, EMMC, 5,USER},
 			{"cache",132120576,0x2d180000, EMMC, 6,USER},
-			{"usrdata",1073741824,0x34f80000, EMMC, 7,USER},
-			{"fat",0,0x74f80000, EMMC, 8,USER},
+			{"usrdata",2726297600,0x34f80000, EMMC, 7,USER},
+			{"fat",0,0xd7780000, EMMC, 8,USER},
 			{"bmtpool",22020096,0xFFFF00a8, EMMC, 0,USER},
  };
 EXPORT_SYMBOL(PartInfo);
