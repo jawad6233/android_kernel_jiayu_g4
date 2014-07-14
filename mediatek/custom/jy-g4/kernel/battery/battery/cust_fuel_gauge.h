@@ -20,13 +20,13 @@
 #define R_FG_BOARD_SLOPE	1000 //slope
 #endif
 
-#define Q_MAX_POS_50	2700
-#define Q_MAX_POS_25	2694
+#define Q_MAX_POS_50	2720
+#define Q_MAX_POS_25	2714
 #define Q_MAX_POS_0		2250
 #define Q_MAX_NEG_10	2050
 
-#define Q_MAX_POS_50_H_CURRENT	2650
-#define Q_MAX_POS_25_H_CURRENT	2590
+#define Q_MAX_POS_50_H_CURRENT	2670
+#define Q_MAX_POS_25_H_CURRENT	2710
 #define Q_MAX_POS_0_H_CURRENT	2100
 #define Q_MAX_NEG_10_H_CURRENT	1900
 
